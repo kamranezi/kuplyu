@@ -22,6 +22,9 @@ const Login = () => {
             const data = await response.json();
 
             if (response.ok) {
+                // Сохраняем токен в localStorage
+                localStorage.setItem('token', data.token);
+
                 // Если логин успешен, перенаправляем на страницу заявок
                 navigate('/requests');
             } else {

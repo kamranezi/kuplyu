@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import './Requests.css'; // Импортируем файл стилей, если хотите
 
 const Requests = () => {
     const [requests, setRequests] = useState([]);
-    const [showForm, setShowForm] = useState(false);
     const [formData, setFormData] = useState({
-        user_id: '',
         category: '',
         brand: '',
         model: '',
@@ -13,30 +12,34 @@ const Requests = () => {
         max_price: '',
         distance: '',
     });
+    const [errorMessage, setErrorMessage] = useState('');
+    const [showForm, setShowForm] = useState(false); // Для отображения формы
+
+    // Функция для получения заявок
+    const fetchRequests = async () => {
+        try {
+            const token = localStorage.getItem('token'); // Получаем токен из localStorage
+            const response = await fetch('http://localhost:8080/requests', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`, // Передаем токен в заголовках
+                },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setRequests(data.requests);
+            } else {
+                setErrorMessage('Failed to fetch requests');
+            }
+        } catch (error) {
+            console.error('Error fetching requests:', error);
+            setErrorMessage('An error occurred while fetching requests.');
+        }
+    };
 
     useEffect(() => {
-        // Функция для получения всех заявок
-        const fetchRequests = async () => {
-            try {
-                const response = await fetch('http://localhost:8080/requests', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setRequests(data.requests); // Сохраняем заявки в состоянии
-                } else {
-                    console.error('Failed to fetch requests');
-                }
-            } catch (error) {
-                console.error('Error fetching requests:', error);
-            }
-        };
-
-        fetchRequests(); // Вызываем функцию при загрузке компонента
+        fetchRequests();
     }, []);
 
     const handleChange = (e) => {
@@ -49,37 +52,44 @@ const Requests = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Преобразование значений в числа
-        const dataToSend = {
-            user_id: parseInt(formData.user_id, 10), // Преобразование в число
-            category: formData.category,
-            brand: formData.brand,
-            model: formData.model,
-            year: parseInt(formData.year, 10), // Преобразование в число
-            part_name: formData.part_name,
-            max_price: parseFloat(formData.max_price), // Преобразование в число с плавающей запятой
-            distance: parseInt(formData.distance, 10) // Преобразование в число
-        };
+        // Проверяем, что все поля заполнены
+        if (!formData.category || !formData.brand || !formData.model || !formData.year || !formData.part_name || !formData.max_price || !formData.distance) {
+            alert('Please fill in all fields');
+            return;
+        }
 
         try {
+            const token = localStorage.getItem('token'); // Получаем токен из localStorage
+
+            // Извлекаем user_id из токена (предполагаем, что токен содержит эту информацию)
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const user_id = payload.user_id;
+
+            // Добавляем user_id в formData
+            const requestData = {
+                user_id, // Добавляем user_id
+                ...formData,
+                max_price: Number(formData.max_price), // Приводим к числу
+                distance: Number(formData.distance), // Приводим к числу
+                year: Number(formData.year), // Приводим к числу
+            };
+
             const response = await fetch('http://localhost:8080/requests/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`, // Передаем токен в заголовках
                 },
-                body: JSON.stringify(dataToSend), // Отправляем данные
+                body: JSON.stringify(requestData),
             });
 
             if (response.ok) {
                 alert('Request created successfully!');
-                setShowForm(false); // Закрываем форму
-                // Перезагрузка заявок после создания новой
-                const fetchRequests = await fetch('http://localhost:8080/requests');
-                const data = await fetchRequests.json();
-                setRequests(data.requests); // Обновляем список заявок
+                setShowForm(false); // Закрываем форму после успешного создания
+                fetchRequests(); // Обновляем список заявок после создания новой
             } else {
-                const errorData = await response.json();
-                alert(`Failed to create request: ${errorData.message}`);
+                const data = await response.json();
+                alert('Failed to create request: ' + (data.message || 'Unknown error'));
             }
         } catch (error) {
             console.error('Error creating request:', error);
@@ -90,22 +100,13 @@ const Requests = () => {
     return (
         <div>
             <h2>Requests</h2>
+            {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
             <button onClick={() => setShowForm(!showForm)}>
                 {showForm ? 'Cancel' : 'Create New Request'}
             </button>
 
             {showForm && (
                 <form onSubmit={handleSubmit}>
-                    <div>
-                        <label>User Id:</label>
-                        <input
-                            type="number"
-                            name="user_id"
-                            value={formData.user_id}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
                     <div>
                         <label>Category:</label>
                         <input
@@ -153,6 +154,7 @@ const Requests = () => {
                             name="part_name"
                             value={formData.part_name}
                             onChange={handleChange}
+                            required
                         />
                     </div>
                     <div>
@@ -180,23 +182,23 @@ const Requests = () => {
             )}
 
             <h3>All Requests</h3>
-            <ul>
-                {requests.length > 0 ? (
-                    requests.map((request) => (
-                        <li key={request.id}>
-                            <strong>Category:</strong> {request.category} <br />
-                            <strong>Brand:</strong> {request.brand} <br />
-                            <strong>Model:</strong> {request.model} <br />
-                            <strong>Part Name:</strong> {request.part_name || 'N/A'} <br />
-                            <strong>Year:</strong> {request.year} <br />
-                            <strong>Max Price:</strong> {request.max_price} руб. <br />
-                            <strong>Distance:</strong> {request.distance} km
-                        </li>
-                    ))
-                ) : (
-                    <p>No requests available</p>
-                )}
-            </ul>
+            {requests.length === 0 ? (
+                <p>No requests found.</p>
+            ) : (
+                <div className="requests-container">
+                    {requests.map((request, index) => (
+                        <div key={index} className="request-card">
+                            <p><strong>Category:</strong> {request.category}</p>
+                            <p><strong>Brand:</strong> {request.brand}</p>
+                            <p><strong>Model:</strong> {request.model}</p>
+                            <p><strong>Year:</strong> {request.year}</p>
+                            <p><strong>Part Name:</strong> {request.part_name}</p>
+                            <p><strong>Max Price:</strong> {request.max_price} руб.</p>
+                            <p><strong>Distance:</strong> {request.distance} км</p>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
