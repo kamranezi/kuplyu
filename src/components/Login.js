@@ -1,20 +1,17 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Хук для навигации
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
+    const navigate = useNavigate(); // Инициализируем навигацию
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Очищаем сообщения перед новой попыткой входа
-        setErrorMessage('');
-        setSuccessMessage('');
-
         try {
-            const response = await fetch('http://localhost:8080/users/login', {
+            const response = await fetch('http://localhost:8080/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -22,15 +19,13 @@ const Login = () => {
                 body: JSON.stringify({ email, password }),
             });
 
+            const data = await response.json();
+
             if (response.ok) {
-                const data = await response.json();  // Можем получить токен или данные пользователя
-                setSuccessMessage('Login successful!');
-                console.log('User data:', data);  // Можно сохранить токен или данные пользователя в localStorage
-                setEmail('');
-                setPassword('');
+                // Если логин успешен, перенаправляем на страницу заявок
+                navigate('/requests');
             } else {
-                const errorData = await response.json();
-                setErrorMessage(errorData.message || 'Login failed.');
+                setErrorMessage(data.message || 'Login failed.');
             }
         } catch (error) {
             setErrorMessage('An error occurred. Please try again later.');
@@ -41,7 +36,6 @@ const Login = () => {
         <div>
             <h2>Login</h2>
             {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
-            {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
             <form onSubmit={handleSubmit}>
                 <div>
                     <label>Email:</label>
