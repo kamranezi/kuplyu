@@ -24,9 +24,13 @@ const Login = () => {
             if (response.ok) {
                 // Сохраняем токен в localStorage
                 localStorage.setItem('token', data.token);
+                // Извлекаем user_id из токена
+                const payload = JSON.parse(atob(data.token.split('.')[1]));
+                const user_id = payload.user_id;
+                localStorage.setItem('user_id', user_id);
 
-                // Если логин успешен, перенаправляем на страницу заявок
-                navigate('/requests');
+                // Если логин успешен, перенаправляем на главную страницу
+                navigate('/');
             } else {
                 setErrorMessage(data.message || 'Login failed.');
             }

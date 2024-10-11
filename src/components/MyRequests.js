@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import './Requests.css';
-import {Link} from "react-router-dom"; // Импортируем файл стилей, если хотите
+import './Requests.css'; // Импортируем файл стилей, если хотите
 
-const Requests = () => {
+const MyRequests = () => {
     const [requests, setRequests] = useState([]);
     const [formData, setFormData] = useState({
         category: '',
@@ -16,11 +15,13 @@ const Requests = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const [showForm, setShowForm] = useState(false); // Для отображения формы
 
-    // Функция для получения заявок
-    const fetchRequests = async () => {
+    // Функция для получения заявок текущего пользователя
+    const fetchMyRequests = async () => {
         try {
             const token = localStorage.getItem('token'); // Получаем токен из localStorage
-            const response = await fetch('http://localhost:8080/requests', {
+            const user_id = localStorage.getItem('user_id'); // Получаем user_id из localStorage
+
+            const response = await fetch(`http://localhost:8080/requests?user_id=${user_id}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`, // Передаем токен в заголовках
@@ -40,7 +41,7 @@ const Requests = () => {
     };
 
     useEffect(() => {
-        fetchRequests();
+        fetchMyRequests();
     }, []);
 
     const handleChange = (e) => {
@@ -61,10 +62,7 @@ const Requests = () => {
 
         try {
             const token = localStorage.getItem('token'); // Получаем токен из localStorage
-
-            // Извлекаем user_id из токена (предполагаем, что токен содержит эту информацию)
             const user_id = localStorage.getItem('user_id'); // Получаем user_id из localStorage
-
 
             // Добавляем user_id в formData
             const requestData = {
@@ -87,7 +85,7 @@ const Requests = () => {
             if (response.ok) {
                 alert('Request created successfully!');
                 setShowForm(false); // Закрываем форму после успешного создания
-                fetchRequests(); // Обновляем список заявок после создания новой
+                fetchMyRequests(); // Обновляем список заявок после создания новой
             } else {
                 const data = await response.json();
                 alert('Failed to create request: ' + (data.message || 'Unknown error'));
@@ -100,10 +98,7 @@ const Requests = () => {
 
     return (
         <div>
-            <h2>Requests</h2>
-            <Link to="/my-requests">
-                <button>Мои заявки</button>
-            </Link>
+            <h2>My Requests</h2>
             <div>
                 <input type="text" placeholder="Поиск заявок..."/>
                 <button>Поиск</button>
@@ -189,7 +184,7 @@ const Requests = () => {
                 </form>
             )}
 
-            <h3>All Requests</h3>
+            <h3>My Requests</h3>
             {requests.length === 0 ? (
                 <p>No requests found.</p>
             ) : (
@@ -211,4 +206,4 @@ const Requests = () => {
     );
 };
 
-export default Requests;
+export default MyRequests;
