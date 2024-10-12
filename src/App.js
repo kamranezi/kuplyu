@@ -12,10 +12,13 @@ import Offers from './components/Offers';
 import MyOffers from './components/MyOffers';
 import MyRequests from './components/MyRequests';
 import MyDeals from './components/MyDeals';
+import Header from "./components/Header";
+import RequestDetail from "./components/RequestDetail";
 
 const App = () => {
     return (
         <Router>
+            <Header />
             <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
@@ -27,6 +30,8 @@ const App = () => {
                 <Route path="/offers" element={<Offers />} />
                 <Route path="/my-offers" element={<MyOffers />} />
                 <Route path="/my-requests" element={<MyRequests />} />
+                <Route path="/request/:requestId" element={<RequestDetail />} />
+                <Route path="/my-request/:requestId" element={<RequestDetail />} />
                 <Route path="/my-deals" element={<MyDeals />} />
             </Routes>
         </Router>

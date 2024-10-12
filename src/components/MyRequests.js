@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import {
+    Container,
+    Typography,
+    Box,
+    Button,
+    TextField,
+} from '@mui/material';
 import './Requests.css'; // Импортируем файл стилей, если хотите
 
 const MyRequests = () => {
     const [requests, setRequests] = useState([]);
-    const [formData, setFormData] = useState({
-        category: '',
-        brand: '',
-        model: '',
-        year: '',
-        part_name: '',
-        max_price: '',
-        distance: '',
-    });
     const [errorMessage, setErrorMessage] = useState('');
-    const [showForm, setShowForm] = useState(false); // Для отображения формы
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Функция для получения заявок текущего пользователя
     const fetchMyRequests = async () => {
@@ -44,165 +43,60 @@ const MyRequests = () => {
         fetchMyRequests();
     }, []);
 
-    const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
+    const handleSearch = (e) => {
+        setSearchQuery(e.target.value);
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        // Проверяем, что все поля заполнены
-        if (!formData.category || !formData.brand || !formData.model || !formData.year || !formData.part_name || !formData.max_price || !formData.distance) {
-            alert('Please fill in all fields');
-            return;
-        }
-
-        try {
-            const token = localStorage.getItem('token'); // Получаем токен из localStorage
-            const user_id = localStorage.getItem('user_id'); // Получаем user_id из localStorage
-
-            // Добавляем user_id в formData
-            const requestData = {
-                user_id, // Добавляем user_id
-                ...formData,
-                max_price: Number(formData.max_price), // Приводим к числу
-                distance: Number(formData.distance), // Приводим к числу
-                year: Number(formData.year), // Приводим к числу
-            };
-
-            const response = await fetch('http://localhost:8080/requests/create', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`, // Передаем токен в заголовках
-                },
-                body: JSON.stringify(requestData),
-            });
-
-            if (response.ok) {
-                alert('Request created successfully!');
-                setShowForm(false); // Закрываем форму после успешного создания
-                fetchMyRequests(); // Обновляем список заявок после создания новой
-            } else {
-                const data = await response.json();
-                alert('Failed to create request: ' + (data.message || 'Unknown error'));
-            }
-        } catch (error) {
-            console.error('Error creating request:', error);
-            alert('An error occurred while creating the request.');
-        }
-    };
+    const filteredRequests = requests.filter(request =>
+        request.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        request.part_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
-        <div>
-            <h2>My Requests</h2>
-            <div>
-                <input type="text" placeholder="Поиск заявок..."/>
-                <button>Поиск</button>
-            </div>
-            {errorMessage && <p style={{color: 'red'}}>{errorMessage}</p>}
-            <button onClick={() => setShowForm(!showForm)}>
-                {showForm ? 'Cancel' : 'Create New Request'}
-            </button>
-
-            {showForm && (
-                <form onSubmit={handleSubmit}>
-                    <div>
-                        <label>Category:</label>
-                        <input
-                            type="text"
-                            name="category"
-                            value={formData.category}
-                            onChange={handleChange}
-                            required
-                        />
+        <Container>
+            <Typography variant="h4" gutterBottom>
+                My Requests
+            </Typography>
+            <Box mt={2}>
+                <TextField
+                    label="Search Requests"
+                    value={searchQuery}
+                    onChange={handleSearch}
+                    fullWidth
+                />
+            </Box>
+            {errorMessage && <Typography color="error">{errorMessage}</Typography>}
+            <Box mt={2}>
+                <Link to="/create-request">
+                    <Button variant="contained" color="primary">
+                        Create New Request
+                    </Button>
+                </Link>
+            </Box>
+            <Box mt={2}>
+                {filteredRequests.length === 0 ? (
+                    <Typography>No requests found.</Typography>
+                ) : (
+                    <div className="requests-container">
+                        {filteredRequests.map((request, index) => (
+                            <Link to={`/request/${request.id}`} key={index} style={{ textDecoration: 'none' }}>
+                                <Box className="request-card" p={2} mb={2} border={1} borderColor="grey.300">
+                                    <Typography><strong>Category:</strong> {request.category}</Typography>
+                                    <Typography><strong>Brand:</strong> {request.brand}</Typography>
+                                    <Typography><strong>Model:</strong> {request.model}</Typography>
+                                    <Typography><strong>Year:</strong> {request.year}</Typography>
+                                    <Typography><strong>Part Name:</strong> {request.part_name}</Typography>
+                                    <Typography><strong>Max Price:</strong> {request.max_price} руб.</Typography>
+                                    <Typography><strong>Distance:</strong> {request.distance} км</Typography>
+                                </Box>
+                            </Link>
+                        ))}
                     </div>
-                    <div>
-                        <label>Brand:</label>
-                        <input
-                            type="text"
-                            name="brand"
-                            value={formData.brand}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label>Model:</label>
-                        <input
-                            type="text"
-                            name="model"
-                            value={formData.model}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label>Year:</label>
-                        <input
-                            type="number"
-                            name="year"
-                            value={formData.year}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label>Part Name:</label>
-                        <input
-                            type="text"
-                            name="part_name"
-                            value={formData.part_name}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label>Max Price:</label>
-                        <input
-                            type="number"
-                            name="max_price"
-                            value={formData.max_price}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label>Distance:</label>
-                        <input
-                            type="number"
-                            name="distance"
-                            value={formData.distance}
-                            onChange={handleChange}
-                            required
-                        />
-                    </div>
-                    <button type="submit">Submit Request</button>
-                </form>
-            )}
-
-            <h3>My Requests</h3>
-            {requests.length === 0 ? (
-                <p>No requests found.</p>
-            ) : (
-                <div className="requests-container">
-                    {requests.map((request, index) => (
-                        <div key={index} className="request-card">
-                            <p><strong>Category:</strong> {request.category}</p>
-                            <p><strong>Brand:</strong> {request.brand}</p>
-                            <p><strong>Model:</strong> {request.model}</p>
-                            <p><strong>Year:</strong> {request.year}</p>
-                            <p><strong>Part Name:</strong> {request.part_name}</p>
-                            <p><strong>Max Price:</strong> {request.max_price} руб.</p>
-                            <p><strong>Distance:</strong> {request.distance} км</p>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
+                )}
+            </Box>
+        </Container>
     );
 };
 
