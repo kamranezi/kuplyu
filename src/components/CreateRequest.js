@@ -18,7 +18,7 @@ const CreateRequest = () => {
         max_price: '',
         distance: '',
     });
-    const [errorMessage, setErrorMessage] = useState('');
+    const [errorMessage] = useState('');
     const navigate = useNavigate();
 
     const handleChange = (e) => {
